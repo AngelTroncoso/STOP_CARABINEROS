@@ -28,6 +28,7 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
 app.add_middleware(
@@ -55,6 +56,7 @@ async def root() -> dict[str, str]:
         "fuente": settings.stop_base_url,
         "documentacion_swagger": "/docs",
         "documentacion_redoc": "/redoc",
+        "openapi": "/openapi.json",
         "health": "/health",
     }
 

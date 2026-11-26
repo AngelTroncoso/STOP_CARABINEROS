@@ -133,15 +133,33 @@ def _get_client() -> TestClient:
     return client
 
 
-def test_root_and_health() -> None:
+def test_root_docs_and_health() -> None:
     with TestClient(app) as client:
         r_root = client.get("/")
         assert r_root.status_code == 200
-        assert r_root.json()["documentacion_swagger"] == "/docs"
+        root_json = r_root.json()
+        assert root_json["documentacion_swagger"] == "/docs"
+        assert root_json["documentacion_redoc"] == "/redoc"
+        assert root_json["openapi"] == "/openapi.json"
+        assert root_json["health"] == "/health"
 
         r_health = client.get("/health")
         assert r_health.status_code == 200
         assert r_health.json() == {"status": "ok"}
+
+        r_docs = client.get("/docs")
+        assert r_docs.status_code == 200
+        assert "Swagger UI" in r_docs.text
+
+        r_redoc = client.get("/redoc")
+        assert r_redoc.status_code == 200
+        assert "ReDoc" in r_redoc.text
+
+        r_openapi = client.get("/openapi.json")
+        assert r_openapi.status_code == 200
+        openapi_data = r_openapi.json()
+        assert "/api/v1/semanas" in openapi_data["paths"]
+        assert "/api/v1/estadisticas" in openapi_data["paths"]
 
 
 def test_catalogos() -> None:
@@ -238,7 +256,15 @@ def test_upstream_error_handler() -> None:
 
 
 def test_vercel_entrypoint_lazy_client() -> None:
-    from api.index import app as vercel_app
+    import json
+    from pathlib import Path
+    from starlette.requests import Request
+    from app.dependencies import get_stop_client
+    from app.main import app as vercel_app
+
+    vercel_cfg = json.loads(Path("vercel.json").read_text(encoding="utf-8"))
+    assert "rewrites" not in vercel_cfg
+    assert "app/main.py" in vercel_cfg.get("functions", {})
 
     if hasattr(vercel_app.state, "stop_client"):
         delattr(vercel_app.state, "stop_client")
@@ -249,9 +275,6 @@ def test_vercel_entrypoint_lazy_client() -> None:
     assert r.json() == {"status": "ok"}
 
     # Verifica que get_stop_client inicialice el cliente de forma lazy sin lifespan
-    from starlette.requests import Request
-    from app.dependencies import get_stop_client
-
     scope = {"type": "http", "app": vercel_app, "headers": []}
     req = Request(scope)
     lazy_client = get_stop_client(req)

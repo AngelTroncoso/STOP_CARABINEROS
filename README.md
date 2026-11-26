@@ -62,7 +62,7 @@ pytest -v
 
 ## Despliegue y pruebas en Vercel (Python Runtime)
 
-El proyecto incluye el entrypoint [api/index.py](api/index.py) y la configuración [vercel.json](vercel.json) para ejecutarse como **Vercel Function** con el runtime oficial de Python:
+El proyecto utiliza el entrypoint automático [app/main.py](app/main.py) (zero-config para FastAPI en Vercel) y la configuración de duración en [vercel.json](vercel.json):
 
 ```bash
 # 1. Iniciar sesión en Vercel (si aún no estás autenticado)
